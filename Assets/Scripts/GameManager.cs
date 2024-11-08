@@ -1,60 +1,54 @@
-using System.Collections;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UI; // Add this if using UnityEngine.UI.Text
+using TMPro; // Add this if using TextMeshPro
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Prefabs and Managers")]
     [SerializeField] private GameObject redTargetPrefab;
     [SerializeField] private GameObject uiCanvas;
     [SerializeField] private TargetManager targetManager;
     [SerializeField] private GameObject bubbleCursor;
     [SerializeField] private GameObject pointCursor;
     [SerializeField] private StudyBehavior studyBehavior;
-
-    [Header("UI Elements")]
     [SerializeField] private TMP_InputField participantIDInput;
+    [SerializeField] private TextMeshProUGUI levelText; // Reference to the TextMeshProUGUI component
+    // [SerializeField] private Text levelText; // Use this if using UnityEngine.UI.Text
 
-    private int currentTrialIndex = 0;
-    private bool isInitialPhaseCompleted = false;
+    private int currentTrial = 0;
+    private bool initialPhaseComplete = false;
     private bool useBubbleCursor;
-    private bool isStudyCompleted = false;
+    private int currentLevel = 0; // Initialize current level
+    private bool studyCompleted = false;
 
-    private void Start()
+    void Start()
     {
-        HideCursors();
+        bubbleCursor.SetActive(false);
+        pointCursor.SetActive(false);
+        currentLevel = 0; // Reset level when the game starts
+        levelText.gameObject.SetActive(false); // Set the level text to inactive initially
+        UpdateLevelText(); // Update the level text at the start
     }
 
-    public void BeginStudy()
-    {
-        if (!ValidateParticipantID()) return;
-
-        uiCanvas.SetActive(false);
-        useBubbleCursor = studyBehavior.StudySettings.cursorType == CursorType.BubbleCursor;
-
-        StartInitialPhase();
-    }
-
-    private void Update()
-    {
-        HandleMouseClick();
-    }
-
-    private bool ValidateParticipantID()
+    public void StartGame()
     {
         if (participantIDInput != null && int.TryParse(participantIDInput.text, out int participantID))
         {
             studyBehavior.ParticipantID = participantID;
-            return true;
         }
         else
         {
-            Debug.LogError("Invalid or missing Participant ID.");
-            return false;
+            Debug.LogError("Participant ID Input is missing or invalid.");
+            return;
         }
+
+        uiCanvas.SetActive(false);
+        levelText.gameObject.SetActive(true); // Ensure the level text is active when the game starts
+        useBubbleCursor = studyBehavior.StudySettings.cursorType == CursorType.BubbleCursor;
+        StartInitialPhase();
     }
 
-    private void HandleMouseClick()
+    void Update()
     {
         if (Input.GetMouseButtonDown(0))
         {
@@ -62,85 +56,80 @@ public class GameManager : MonoBehaviour
             if (hit.collider != null && hit.collider.TryGetComponent(out Target target))
             {
                 target.OnSelect();
-                if (!isInitialPhaseCompleted)
+                if (!initialPhaseComplete)
                 {
-                    isInitialPhaseCompleted = true;
+                    initialPhaseComplete = true;
                     StartCoroutine(ProceedToNextTrial());
                 }
             }
         }
     }
 
-    private void StartInitialPhase()
+    void StartInitialPhase()
     {
         Debug.Log("Starting initial phase with central red target.");
-        CreateRedTarget(Vector3.zero);
-    }
-
-    private void CreateRedTarget(Vector3 position)
-    {
-        GameObject initialTarget = Instantiate(redTargetPrefab, position, Quaternion.identity);
+        var initialTarget = Instantiate(redTargetPrefab, Vector3.zero, Quaternion.identity);
         initialTarget.tag = "Target";
     }
 
     public IEnumerator ProceedToNextTrial()
     {
-        if (isStudyCompleted) yield break;
+        if (studyCompleted) yield break;  // Stop the coroutine if the study is completed
 
-        ClearAllTargets();
+        ClearScreen();
         yield return new WaitForSeconds(0.5f);
 
         if (studyBehavior.currentTrialIndex < studyBehavior.blockSequence.Count)
         {
-            SetupNextTrial();
+            // Setup the next trial only if the study is still ongoing
+            var trialData = studyBehavior.CurrentTrial;
+            targetManager.SetupTrial(trialData.amplitude, trialData.targetSize, trialData.EWToW_Ratio, currentLevel);
+
+            if (useBubbleCursor)
+            {
+                bubbleCursor.SetActive(true);
+            }
+            else
+            {
+                pointCursor.SetActive(true);
+            }
+
+            IncrementLevel(); // Increment level after each trial
         }
         else
         {
-            CompleteStudy();
+            studyCompleted = true; // Mark study as completed
+            studyBehavior.EndStudy(); // End the study if all trials are completed
         }
     }
 
-    private void SetupNextTrial()
+    void ClearScreen()
     {
-        var trialData = studyBehavior.CurrentTrial;
-        targetManager.InitializeTrial(trialData.amplitude, trialData.targetSize, trialData.EWToW_Ratio, trialData.numberOfWhiteTargets);
-
-        if (useBubbleCursor)
-        {
-            bubbleCursor.SetActive(true);
-        }
-        else
-        {
-            pointCursor.SetActive(true);
-        }
-    }
-
-    private void CompleteStudy()
-    {
-        isStudyCompleted = true;
-        studyBehavior.EndStudy();
-        EndExperiment();
-    }
-
-    private void ClearAllTargets()
-    {
-        GameObject[] allTargets = GameObject.FindGameObjectsWithTag("Target");
-        foreach (GameObject target in allTargets)
+        GameObject[] targets = GameObject.FindGameObjectsWithTag("Target");
+        foreach (GameObject target in targets)
         {
             Destroy(target);
         }
     }
 
-    private void EndExperiment()
+    void EndExperiment()
     {
         Debug.Log("Experiment completed. Thank you for participating.");
-        HideCursors();
-    }
-
-    private void HideCursors()
-    {
         bubbleCursor.SetActive(false);
         pointCursor.SetActive(false);
     }
-}
 
+    public void IncrementLevel()
+    {
+        currentLevel = Mathf.Min(currentLevel + 1, 10); // Increment level up to a maximum of 10
+        UpdateLevelText(); // Update the level text when the level changes
+    }
+
+    private void UpdateLevelText()
+    {
+        if (levelText != null)
+        {
+            levelText.text = "Level: " + currentLevel;
+        }
+    }
+}

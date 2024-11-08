@@ -34,13 +34,13 @@ public class Target : MonoBehaviour
     if (IsRedTarget)
     {
         sprite.color = Color.green; // Change color to indicate correct selection
-        StartCoroutine(DestroyAndProceed(0.3f));
+        StartCoroutine(DestroyAndProceed(0.5f));
     }
     else
     {
         sprite.color = Color.red; // Change color to indicate incorrect (missed) selection
-        studyBehavior.RecordMissedClick(); // Only count as missed click for non-red targets
-        StartCoroutine(DestroyAfterDelay(0.3f));
+        studyBehavior.HandleMissedClick(); // Only count as missed click for non-red targets
+        StartCoroutine(DestroyAfterDelay(0.5f));
     }
 }
 
@@ -49,7 +49,7 @@ public class Target : MonoBehaviour
     {
         if (!isSelected && !IsRedTarget && sprite != null)
         {
-            sprite.color = Color.yellow; // This highlights the target to become yellow
+            sprite.color = Color.yellow; // Highlight the target
         }
     }
 
@@ -57,7 +57,7 @@ public class Target : MonoBehaviour
     {
         if (!isSelected && !IsRedTarget && sprite != null)
         {
-            sprite.color = Color.white; // Reseta the color of the non-red target
+            sprite.color = Color.white; // Reset the color of the non-red target
         }
     }
 

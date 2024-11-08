@@ -2,45 +2,37 @@ using UnityEngine;
 
 public class PointCursor : MonoBehaviour
 {
-    private Camera mainCamera;
+    private Camera mainCam;
 
-    private void Start()
+    void Awake()
     {
-        mainCamera = Camera.main;
+        mainCam = Camera.main;
     }
 
-    private void Update()
+    void Update()
     {
-        UpdateCursorPosition();
-        ProcessMouseClick();
+        // Get mouse position in world coordinates
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z += 9f; // Ensure the cursor isn't occluded by the camera
+        transform.position = mainCam.ScreenToWorldPoint(mousePosition);
+
+        // Handle clicks
+        HandleMouseClick();
     }
 
-    private void UpdateCursorPosition()
-    {
-        // Update the cursor's position based on the mouse's position in world coordinates
-        Vector3 cursorPosition = Input.mousePosition;
-        cursorPosition.z = 9f;  // Offset to ensure it appears in front of the camera
-        transform.position = mainCamera.ScreenToWorldPoint(cursorPosition);
-    }
-
-    private void ProcessMouseClick()
+    private void HandleMouseClick()
     {
         if (Input.GetMouseButtonDown(0))
         {
-            DetectAndSelectTarget();
-        }
-    }
+            RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
 
-    private void DetectAndSelectTarget()
-    {
-        Vector3 clickPosition = mainCamera.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hitInfo = Physics2D.Raycast(clickPosition, Vector2.zero);
-
-        if (hitInfo.collider != null && hitInfo.collider.TryGetComponent(out Target target))
-        {
-            target.OnSelect();  // Invoke the target's select method on click
+            if (hit.collider != null)
+            {
+                if (hit.collider.TryGetComponent(out Target target))
+                {
+                    target.OnSelect(); // Select the target when clicked
+                }
+            }
         }
     }
 }
-
-

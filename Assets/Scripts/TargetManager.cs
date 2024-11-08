@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-
 public class TargetManager : MonoBehaviour
 {
-    [Header("Target Settings")]
-    [SerializeField] private GameObject whiteTargetPrefab;
+    [SerializeField] private GameObject targetPrefab;
     [SerializeField] private GameObject redTargetPrefab;
-    [SerializeField] private float spacingBetweenDistractors = 1.0f;
+    [SerializeField] private float distractorDistance = 1.0f;
 
     private Camera mainCamera;
 
@@ -15,128 +13,89 @@ public class TargetManager : MonoBehaviour
         mainCamera = Camera.main;
     }
 
-    public void InitializeTrial(float amplitude, float targetSize, float EWToW_Ratio, int numberOfWhiteTargets)
+    public void SetupTrial(float amplitude, float targetSize, float EWToW_Ratio, int numberOfWhiteTargets)
     {
-        Debug.Log($"Initializing trial with Amplitude: {amplitude}, Target Size: {targetSize}, EW/W Ratio: {EWToW_Ratio}, White Targets: {numberOfWhiteTargets}");
-
-        List<Vector3> targetPositions = GenerateTargetPositions(amplitude, numberOfWhiteTargets + 1); // Include red target
-        int redTargetPositionIndex = Random.Range(0, targetPositions.Count);
-
-        for (int i = 0; i < targetPositions.Count; i++)
+        Debug.Log($"Setting up trial with Amplitude: {amplitude}, Target Size: {targetSize}, EW/W: {EWToW_Ratio}, Extra White Targets: {numberOfWhiteTargets}");
+        List<Vector3> points = GenerateRandomPoints(amplitude, numberOfWhiteTargets + 1); // +1 to include red target
+        int redTargetIndex = Random.Range(0, points.Count);
+        for (int i = 0; i < points.Count; i++)
         {
-            GameObject targetInstance;
-
-            if (i == redTargetPositionIndex)
+            GameObject targetObject;
+            if (i == redTargetIndex)
             {
-                targetInstance = SpawnRedTarget(targetPositions[i], targetSize);
-                PlaceDistractorsAroundTarget(targetInstance.transform.position, targetSize, EWToW_Ratio);
+                // Place the red target at a random position
+                targetObject = Instantiate(redTargetPrefab, points[i], Quaternion.identity, transform);
+                targetObject.tag = "Target";
+                targetObject.transform.localScale = Vector3.one * targetSize;
+
+                var targetScript = targetObject.GetComponent<Target>();
+                if (targetScript != null)
+                {
+                    targetScript.IsRedTarget = true;
+                }
             }
             else
             {
-                targetInstance = SpawnWhiteTarget(targetPositions[i], targetSize);
+                // Place other white targets at random positions
+                targetObject = Instantiate(targetPrefab, points[i], Quaternion.identity, transform);
+                targetObject.tag = "Target";
+                targetObject.transform.localScale = Vector3.one * targetSize;
             }
         }
     }
 
-    private GameObject SpawnRedTarget(Vector3 position, float targetSize)
+    private List<Vector3> GenerateRandomPoints(float amplitude, int numberOfPoints)
     {
-        GameObject redTarget = Instantiate(redTargetPrefab, position, Quaternion.identity, transform);
-        redTarget.tag = "Target";
-        redTarget.transform.localScale = Vector3.one * targetSize;
-
-        if (redTarget.TryGetComponent(out Target targetComponent))
-        {
-            targetComponent.IsRedTarget = true;
-            redTarget.GetComponent<SpriteRenderer>().color = Color.red;
-        }
-
-        return redTarget;
-    }
-
-    private GameObject SpawnWhiteTarget(Vector3 position, float targetSize)
-    {
-        GameObject whiteTarget = Instantiate(whiteTargetPrefab, position, Quaternion.identity, transform);
-        whiteTarget.tag = "Target";
-        whiteTarget.transform.localScale = Vector3.one * targetSize;
-
-        return whiteTarget;
-    }
-
-    private void PlaceDistractorsAroundTarget(Vector3 redTargetPosition, float targetSize, float EWToW_Ratio)
-    {
-        Vector3[] positions = {
-            redTargetPosition + new Vector3(-spacingBetweenDistractors * EWToW_Ratio, 0f, 0f),
-            redTargetPosition + new Vector3(spacingBetweenDistractors * EWToW_Ratio, 0f, 0f),
-            redTargetPosition + new Vector3(0f, spacingBetweenDistractors * EWToW_Ratio, 0f),
-            redTargetPosition + new Vector3(0f, -spacingBetweenDistractors * EWToW_Ratio, 0f)
-        };
-
-        foreach (Vector3 pos in positions)
-        {
-            GameObject distractor = Instantiate(whiteTargetPrefab, pos, Quaternion.identity, transform);
-            distractor.tag = "Target";
-            distractor.transform.localScale = Vector3.one * targetSize;
-        }
-    }
-
-    private List<Vector3> GenerateTargetPositions(float amplitude, int totalTargets)
-    {
-        List<Vector3> positions = new List<Vector3>();
-        float minSpacing = 1.0f;
-        int maxAttempts = 100;
-
+        List<Vector3> points = new List<Vector3>();
+        float minimumSpacing = 1.0f; // Minimum distance between targets to avoid overlap
+        int maxAttemptsPerPoint = 100; // Limit the attempts to avoid an infinite loop
+        // Get the screen boundaries in world space
         Vector3 screenBottomLeft = mainCamera.ScreenToWorldPoint(new Vector3(0, 0, 10));
         Vector3 screenTopRight = mainCamera.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, 10));
-
         float screenLeft = screenBottomLeft.x;
         float screenRight = screenTopRight.x;
         float screenTop = screenTopRight.y;
         float screenBottom = screenBottomLeft.y;
-
-        for (int i = 0; i < totalTargets; i++)
+        for (int i = 0; i < numberOfPoints; i++)
         {
-            bool validPositionFound = false;
+            bool positionFound = false;
             int attempts = 0;
-
-            while (!validPositionFound && attempts < maxAttempts)
+            while (!positionFound && attempts < maxAttemptsPerPoint)
             {
                 attempts++;
+                // Generate a random angle and a random distance within amplitude range
+                float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
 
-                float randomAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float distance = Random.Range(amplitude / 2f, amplitude);
-                Vector3 offset = new Vector3(Mathf.Cos(randomAngle), Mathf.Sin(randomAngle)) * distance;
-
-                float randomX = Random.Range(screenLeft + minSpacing, screenRight - minSpacing);
-                float randomY = Random.Range(screenBottom + minSpacing, screenTop - minSpacing);
-                Vector3 potentialPosition = new Vector3(randomX, randomY, 0) + offset;
-
-                if (!IsPositionTooClose(potentialPosition, positions, minSpacing))
+                float randomDistance = Random.Range(amplitude / 2f, amplitude);
+                // Calculate an offset position based on angle and distance
+                Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle)) * randomDistance;
+                // Generate a random position within the screen bounds
+                float randomX = Random.Range(screenLeft + minimumSpacing, screenRight - minimumSpacing);
+                float randomY = Random.Range(screenBottom + minimumSpacing, screenTop - minimumSpacing);
+                Vector3 position = new Vector3(randomX, randomY, 0) + offset;
+                // Check if the position is far enough from existing points
+                bool tooClose = false;
+                foreach (Vector3 existingPoint in points)
                 {
-                    positions.Add(potentialPosition);
-                    validPositionFound = true;
-                    Debug.Log($"Position {i} placed at {potentialPosition} after {attempts} attempts.");
+                    if (Vector3.Distance(position, existingPoint) < minimumSpacing)
+                    {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                // If the point is valid, add it to the list
+                if (!tooClose)
+                {
+                    points.Add(position);
+                    positionFound = true;
+                    Debug.Log($"Point {i} placed at {position} after {attempts} attempts.");
                 }
             }
-
-            if (!validPositionFound)
+            if (!positionFound)
             {
-                Debug.LogWarning($"Failed to place position {i} after {maxAttempts} attempts. Consider adjusting amplitude or spacing.");
+                Debug.LogWarning($"Could not place point {i} after {maxAttemptsPerPoint} attempts. Consider adjusting amplitude or minimumSpacing.");
             }
         }
-
-        return positions;
-    }
-
-    private bool IsPositionTooClose(Vector3 newPosition, List<Vector3> existingPositions, float minSpacing)
-    {
-        foreach (Vector3 existingPosition in existingPositions)
-        {
-            if (Vector3.Distance(newPosition, existingPosition) < minSpacing)
-            {
-                return true;
-            }
-        }
-        return false;
+        return points;
     }
 }
-
