@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI; // Add this if using UnityEngine.UI.Text
-using TMPro; // Add this if using TextMeshPro
+using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 
 public class GameManager : MonoBehaviour
@@ -12,22 +12,25 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject pointCursor;
     [SerializeField] private StudyBehavior studyBehavior;
     [SerializeField] private TMP_InputField participantIDInput;
-    [SerializeField] private TextMeshProUGUI levelText; // Reference to the TextMeshProUGUI component
-    // [SerializeField] private Text levelText; // Use this if using UnityEngine.UI.Text
+    [SerializeField] private TextMeshProUGUI levelText;
+    [SerializeField] private TextMeshProUGUI streakText;  // New field for streak display
 
     private int currentTrial = 0;
     private bool initialPhaseComplete = false;
     private bool useBubbleCursor;
-    private int currentLevel = 0; // Initialize current level
+    private int currentLevel = 0;
     private bool studyCompleted = false;
+    private int streakCount = 0;  // Streak count variable
 
     void Start()
     {
         bubbleCursor.SetActive(false);
         pointCursor.SetActive(false);
-        currentLevel = 0; // Reset level when the game starts
-        levelText.gameObject.SetActive(false); // Set the level text to inactive initially
-        UpdateLevelText(); // Update the level text at the start
+        currentLevel = 0;
+        levelText.gameObject.SetActive(false);
+        streakText.gameObject.SetActive(true); // Ensure streak text is active
+        UpdateLevelText();
+        UpdateStreakText(); // Initialize streak display
     }
 
     public void StartGame()
@@ -43,7 +46,7 @@ public class GameManager : MonoBehaviour
         }
 
         uiCanvas.SetActive(false);
-        levelText.gameObject.SetActive(true); // Ensure the level text is active when the game starts
+        levelText.gameObject.SetActive(true);
         useBubbleCursor = studyBehavior.StudySettings.cursorType == CursorType.BubbleCursor;
         StartInitialPhase();
     }
@@ -55,7 +58,17 @@ public class GameManager : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
             if (hit.collider != null && hit.collider.TryGetComponent(out Target target))
             {
-                target.OnSelect();
+                bool isCorrectTarget = target.OnSelect();
+
+                if (isCorrectTarget)
+                {
+                    IncrementStreak(); // Increment streak on correct selection
+                }
+                else
+                {
+                    ResetStreak(); // Reset streak on incorrect selection
+                }
+
                 if (!initialPhaseComplete)
                 {
                     initialPhaseComplete = true;
@@ -74,17 +87,15 @@ public class GameManager : MonoBehaviour
 
     public IEnumerator ProceedToNextTrial()
     {
-        if (studyCompleted) yield break;  // Stop the coroutine if the study is completed
+        if (studyCompleted) yield break;
 
         ClearScreen();
         yield return new WaitForSeconds(0.5f);
 
         if (studyBehavior.currentTrialIndex < studyBehavior.blockSequence.Count)
         {
-            // Setup the next trial only if the study is still ongoing
             var trialData = studyBehavior.CurrentTrial;
             targetManager.SetupTrial(trialData.amplitude, trialData.targetSize, trialData.EWToW_Ratio, currentLevel);
-
             if (useBubbleCursor)
             {
                 bubbleCursor.SetActive(true);
@@ -93,13 +104,12 @@ public class GameManager : MonoBehaviour
             {
                 pointCursor.SetActive(true);
             }
-
-            IncrementLevel(); // Increment level after each trial
+            IncrementLevel();
         }
         else
         {
-            studyCompleted = true; // Mark study as completed
-            studyBehavior.EndStudy(); // End the study if all trials are completed
+            studyCompleted = true;
+            studyBehavior.EndStudy();
         }
     }
 
@@ -121,8 +131,8 @@ public class GameManager : MonoBehaviour
 
     public void IncrementLevel()
     {
-        currentLevel = Mathf.Min(currentLevel + 1, 10); // Increment level up to a maximum of 10
-        UpdateLevelText(); // Update the level text when the level changes
+        currentLevel = Mathf.Min(currentLevel + 1, 10);
+        UpdateLevelText();
     }
 
     private void UpdateLevelText()
@@ -131,5 +141,34 @@ public class GameManager : MonoBehaviour
         {
             levelText.text = "Level: " + currentLevel;
         }
+    }
+
+    private void UpdateStreakText()
+    {
+        if (streakText != null)
+        {
+            streakText.text = "Streak: " + streakCount;
+        }
+    }
+
+    private void AdjustDifficultyBasedOnStreak()
+    {
+        int distractorMultiplier = streakCount >= 3 ? streakCount : 1;
+        targetManager.SetDistractorMultiplier(distractorMultiplier);
+    }
+
+    // New method to increment streak count
+    public void IncrementStreak()
+    {
+        streakCount++;
+        UpdateStreakText();  // Update streak display
+        AdjustDifficultyBasedOnStreak();  // Adjust difficulty if needed
+    }
+
+    // New method to reset streak count
+    public void ResetStreak()
+    {
+        streakCount = 0;
+        UpdateStreakText();  // Update streak display
     }
 }
