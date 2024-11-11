@@ -25,31 +25,32 @@ public class Target : MonoBehaviour
         }
     }
 
-  public void OnSelect()
-{
-    if (isSelected || sprite == null || studyBehavior == null) return;
-
-    isSelected = true;
-
-    if (IsRedTarget)
+    public bool OnSelect()
     {
-        sprite.color = Color.green; // Change color to indicate correct selection
-        StartCoroutine(DestroyAndProceed(0.5f));
-    }
-    else
-    {
-        sprite.color = Color.red; // Change color to indicate incorrect (missed) selection
-        studyBehavior.HandleMissedClick(); // Only count as missed click for non-red targets
-        StartCoroutine(DestroyAfterDelay(0.5f));
-    }
-}
+        if (isSelected || sprite == null || studyBehavior == null) return false;
 
+        isSelected = true;
+
+        if (IsRedTarget)
+        {
+            sprite.color = Color.green;
+            StartCoroutine(DestroyAndProceed(0.5f));
+            return true;
+        }
+        else
+        {
+            sprite.color = Color.red;
+            studyBehavior.HandleMissedClick();
+            StartCoroutine(DestroyAfterDelay(0.5f));
+            return false;
+        }
+    }
 
     public void OnHoverEnter()
     {
         if (!isSelected && !IsRedTarget && sprite != null)
         {
-            sprite.color = Color.yellow; // Highlight the target
+            sprite.color = Color.yellow;
         }
     }
 
@@ -57,7 +58,7 @@ public class Target : MonoBehaviour
     {
         if (!isSelected && !IsRedTarget && sprite != null)
         {
-            sprite.color = Color.white; // Reset the color of the non-red target
+            sprite.color = Color.white;
         }
     }
 

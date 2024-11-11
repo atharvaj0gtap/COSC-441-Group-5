@@ -12,21 +12,24 @@ public class BubbleCursor : MonoBehaviour
     [SerializeField] private Color defaultColor = Color.white; // Default color of the bubble cursor
     [SerializeField] private Color nonGoalHoverColor = Color.red; // Color when hovering over a non-goal target
     [SerializeField] private Color targetInRangeColor = Color.green; // Color when a target is fully within range
-    [SerializeField] private Color correctClickColor = Color.green; // Color for correct click
-    [SerializeField] private Color wrongClickColor = Color.red; // Color for wrong click
     [SerializeField] private AudioSource audioSource; // AudioSource component
     [SerializeField] private AudioClip correctSound; // Sound for correct goal target
     [SerializeField] private AudioClip bombSound; // Sound for non-goal target
+    [SerializeField] private Color correctClickColor = Color.green;  // Color for correct click feedback
+    [SerializeField] private Color wrongClickColor = Color.red;  // Color for incorrect click feedback
+
 
     private Camera mainCam;
     private List<Collider2D> results = new List<Collider2D>();
     private Collider2D previousDetectedCollider = null;
     private Collider2D closestCollider = null;
     private Material innerRingMaterial;
+    private GameManager gameManager;
 
     void Awake()
     {
         mainCam = Camera.main;
+        gameManager = FindObjectOfType<GameManager>(); // Reference to GameManager to update streak
 
         if (bubbleSprite == null)
         {
@@ -71,12 +74,21 @@ public class BubbleCursor : MonoBehaviour
             innerRingMaterial.color = defaultColor; // Reset inner ring color
         }
 
-        if (Input.GetMouseButtonDown(0) && closestCollider != null)
+        if (Input.GetMouseButtonDown(0))
         {
-            SelectTarget(closestCollider);
+            HandleClick();
         }
 
         previousDetectedCollider = closestCollider;
+    }
+
+    private void HandleClick()
+    {
+        // Check if a target is within the minimum radius on click
+        if (closestCollider != null && Vector3.Distance(transform.position, closestCollider.transform.position) <= minRadius)
+        {
+            SelectTarget(closestCollider);
+        }
     }
 
     private void AdjustRadius()
@@ -141,10 +153,7 @@ public class BubbleCursor : MonoBehaviour
     {
         if (previousDetectedCollider != null && previousDetectedCollider.TryGetComponent(out Target t))
         {
-            if (!t.IsRedTarget)
-            {
-                t.OnHoverExit();
-            }
+            t.OnHoverExit();
         }
     }
 
@@ -152,10 +161,7 @@ public class BubbleCursor : MonoBehaviour
     {
         if (previousDetectedCollider != null && collider != previousDetectedCollider && previousDetectedCollider.TryGetComponent(out Target t))
         {
-            if (!t.IsRedTarget)
-            {
-                t.OnHoverExit();
-            }
+            t.OnHoverExit();
         }
     }
 
@@ -163,20 +169,28 @@ public class BubbleCursor : MonoBehaviour
     {
         if (collider != null && collider.TryGetComponent(out Target target))
         {
-            target.OnSelect();
-            PlayClickSound(target.IsRedTarget);
+            // Check if the selected target is the correct red target
+            bool isCorrectTarget = target.IsRedTarget;
 
-            // Change inner ring color based on whether the click is correct or wrong
-            if (target.IsRedTarget)
+            if (isCorrectTarget)
             {
-                innerRingMaterial.color = correctClickColor;
+                gameManager.IncrementStreak(); // Increment streak if correct target is selected
+                PlayClickSound(true); // Play correct sound for red target
+                innerRingSprite.color = correctClickColor; // Set inner circle to correct color
             }
             else
             {
-                innerRingMaterial.color = wrongClickColor;
+                gameManager.ResetStreak(); // Reset streak if incorrect target is selected
+                PlayClickSound(false); // Play bomb sound for incorrect selection
+                innerRingSprite.color = wrongClickColor; // Set inner circle to incorrect color
             }
+
+            target.OnSelect(); // Mark the target as selected
         }
     }
+
+
+    
 
     private void PlayClickSound(bool isGoalTarget)
     {
