@@ -22,8 +22,10 @@ public class StudyBehavior : MonoBehaviour
     private float timer = 0f;
     private int misClick = 0;
     public int currentTrialIndex = 0;
+    private float totalTime = 0f;          // Total time across all trials
+    private int totalMissedClicks = 0;     // Total missed clicks across all trials
 
-    private string[] header = { "PID", "CT", "A", "W", "EWW", "MT", "MissedClicks" };
+    private string[] header = { "PID", "CT", "A", "W", "EWW", "MT", "MissedClicks", "MovingTargets" };
 
     private void Start()
     {
@@ -50,6 +52,11 @@ public class StudyBehavior : MonoBehaviour
     public void NextTrial()
 {
     LogData();  // Log data for the completed trial
+
+    // Accumulate totals before resetting for the next trial
+    totalTime += timer;
+    totalMissedClicks += misClick;
+
     currentTrialIndex++;
     
     // Check if the trial index has reached the total number of trials
@@ -70,7 +77,11 @@ public class StudyBehavior : MonoBehaviour
 {
     blockSequence.Clear(); // Start with an empty list of trials
 
-    List<TrialConditions> allCombinations = new List<TrialConditions>();
+    List<TrialConditions> stationaryTrials = new List<TrialConditions>();
+    List<TrialConditions> movingTrials = new List<TrialConditions>();
+
+    int numberOfStationaryTrials = 5;
+    int stationaryTrialsAdded = 0;
 
     // Generate all possible combinations of conditions
     foreach (float EW in studySettings.EWToW_Ratio)
@@ -79,35 +90,46 @@ public class StudyBehavior : MonoBehaviour
         {
             foreach (float amp in studySettings.targetAmplitudes)
             {
-                allCombinations.Add(new TrialConditions()
+                var trialCondition = new TrialConditions()
                 {
                     amplitude = amp,
                     targetSize = size,
                     EWToW_Ratio = EW,
-                    numberOfWhiteTargets = studySettings.numberOfWhiteTargets
-                });
+                    numberOfWhiteTargets = studySettings.numberOfWhiteTargets,
+                    includeMovingTargets = false
+                };
+                if (stationaryTrialsAdded < numberOfStationaryTrials)
+                {
+                    stationaryTrials.Add(trialCondition);
+                    stationaryTrialsAdded++;
+                }
+                else
+                {
+                trialCondition.includeMovingTargets = true;
+                movingTrials.Add(trialCondition);
+                }
             }
         }
     }
 
     // Shuffle the list of combinations for random ordering
-    allCombinations = YatesShuffle(allCombinations);
+    stationaryTrials = YatesShuffle(stationaryTrials);
+    movingTrials = YatesShuffle(movingTrials);
+
+    // Combine stationary and moving trials
+    List<TrialConditions> allTrials = new List<TrialConditions>();
+    allTrials.AddRange(stationaryTrials);
+    allTrials.AddRange(movingTrials);
 
     // Add trials to blockSequence until we reach totalTrials
     int trialsAdded = 0;
-    while (trialsAdded < totalTrials)
+    foreach (var trial in allTrials)
     {
-        // Cycle through all combinations and add them to the blockSequence
-        foreach (var trial in allCombinations)
-        {
-            if (trialsAdded >= totalTrials)
-                break;
-
+        if (trialsAdded >= totalTrials)
+            break;
             blockSequence.Add(trial);
             trialsAdded++;
         }
-    }
-
     Debug.Log("Total number of trials created: " + blockSequence.Count); // Log the actual number of trials created
 }
 
@@ -120,6 +142,8 @@ public class StudyBehavior : MonoBehaviour
 
     private void LogData()
     {
+        var trial = blockSequence[currentTrialIndex]; // Define trial
+
         // Data row for each trial
         string[] data =
         {
@@ -129,7 +153,9 @@ public class StudyBehavior : MonoBehaviour
             blockSequence[currentTrialIndex].targetSize.ToString(),
             blockSequence[currentTrialIndex].EWToW_Ratio.ToString(),
             timer.ToString(),  // Movement time (MT)
-            misClick.ToString()  // Missed clicks
+            misClick.ToString(),  // Missed clicks
+            trial.includeMovingTargets ? "1" : "0" // Indicate if moving targets were included
+
         };
         CSVManager.AppendToCSV(data); // Log trial data to CSV
     }
@@ -140,13 +166,11 @@ public class StudyBehavior : MonoBehaviour
     }
 
     public void EndStudy()
-{
+    {
     Debug.Log("Study completed. Ending session.");
     // Here you can add code to display a message, load an end scene, or log final data
     FindObjectOfType<GameManager>().EndExperiment();
-
-}
-
+    }
 
     public void SetParticipantID(int ID)
     {
@@ -161,6 +185,16 @@ public class StudyBehavior : MonoBehaviour
             (list[i], list[randomIndex]) = (list[randomIndex], list[i]);
         }
         return list;
+    }
+
+    public float GetTotalTime()
+    {        
+        return totalTime;
+    }
+
+    public int GetTotalMissedClicks()
+    {
+        return totalMissedClicks;
     }
 }
 
@@ -187,4 +221,5 @@ public class TrialConditions
     public float targetSize; // Target size
     public float EWToW_Ratio; // EW/W ratio for distractors
     public int numberOfWhiteTargets; // Number of additional white targets
+    public bool includeMovingTargets; // NEW: Whether moving targets are included
 }

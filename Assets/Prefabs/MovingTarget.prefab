@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: -3858860038131450975}
   - component: {fileID: -2651478888475452846}
   - component: {fileID: 7540759753494045457}
+  - component: {fileID: 522128373999547307}
   m_Layer: 0
   m_Name: MovingTarget
   m_TagString: MovingTarget
@@ -77,7 +78,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0.90751696, g: 0.7685564, b: 0.9528302, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -99,7 +100,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 172cd80efa3976aa8959430b606674d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
+  baseSpeed: 1
   rotationSpeed: 100
 --- !u!58 &-2651478888475452846
 CircleCollider2D:
@@ -163,3 +164,15 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &522128373999547307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6126368994193864810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c058a55e6802f4751bc61b5f97e6761c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
