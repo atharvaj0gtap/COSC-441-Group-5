@@ -27,7 +27,7 @@ public class PointCursor : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
 
             if (hit.collider != null)
-            {
+            {                
                 if (hit.collider.TryGetComponent(out Target target))
                 {
                     target.OnSelect(); // Select the target when clicked

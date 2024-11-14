@@ -5,8 +5,9 @@ public class TargetManager : MonoBehaviour
 {
     [SerializeField] private GameObject targetPrefab;
     [SerializeField] private GameObject redTargetPrefab;
-    private int distractorMultiplier = 1; // Base multiplier
+    [SerializeField] private GameObject movingTargetPrefab; // Add reference to moving target prefab
 
+    private int distractorMultiplier = 1; // Base multiplier
     private Camera mainCamera;
 
     private void Start()
@@ -19,17 +20,19 @@ public class TargetManager : MonoBehaviour
         distractorMultiplier = multiplier;
     }
 
-    public void SetupTrial(float amplitude, float targetSize, float EWToW_Ratio, int numberOfWhiteTargets)
+    public void SetupTrial(float amplitude, float targetSize, float EWToW_Ratio, int numberOfWhiteTargets, int currentLevel)
     {
         int adjustedDistractors = numberOfWhiteTargets * distractorMultiplier;
         Debug.Log($"Setting up trial with Amplitude: {amplitude}, Target Size: {targetSize}, EW/W: {EWToW_Ratio}, Extra White Targets: {adjustedDistractors}");
         List<Vector3> points = GenerateRandomPoints(amplitude, adjustedDistractors + 1); // +1 for red target
         int redTargetIndex = Random.Range(0, points.Count);
+
         for (int i = 0; i < points.Count; i++)
         {
             GameObject targetObject;
             if (i == redTargetIndex)
             {
+                // spawn red main target
                 targetObject = Instantiate(redTargetPrefab, points[i], Quaternion.identity, transform);
                 targetObject.tag = "Target";
                 targetObject.transform.localScale = Vector3.one * targetSize;
@@ -38,6 +41,7 @@ public class TargetManager : MonoBehaviour
                 if (targetScript != null)
                 {
                     targetScript.IsRedTarget = true;
+                    Debug.Log($"Red target instantiated. IsRedTarget: {targetScript.IsRedTarget}");
                 }
             }
             else
@@ -45,9 +49,9 @@ public class TargetManager : MonoBehaviour
                 targetObject = Instantiate(targetPrefab, points[i], Quaternion.identity, transform);
                 targetObject.tag = "Target";
                 targetObject.transform.localScale = Vector3.one * targetSize;
-            }
         }
     }
+}
 
     private List<Vector3> GenerateRandomPoints(float amplitude, int numberOfPoints)
     {
@@ -100,5 +104,23 @@ public class TargetManager : MonoBehaviour
         }
 
         return points;
+    }
+    
+    // Helper function to generate a random path for moving targets
+    private List<Vector3> GenerateRandomPath(float amplitude, int points = 4)
+{
+    List<Vector3> path = new List<Vector3>();
+    Vector3 screenBottomLeft = mainCamera.ScreenToWorldPoint(new Vector3(0, 0, 10));
+    Vector3 screenTopRight = mainCamera.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, 10));
+    float padding = 2f;
+    for (int i = 0; i < points; i++)
+    {
+        Vector3 randomPoint = new Vector3(
+            Random.Range(screenBottomLeft.x + padding, screenTopRight.x - 2),
+            Random.Range(screenBottomLeft.y + padding, screenTopRight.y - 2),
+            0);
+        path.Add(randomPoint);
+    }
+    return path;
     }
 }

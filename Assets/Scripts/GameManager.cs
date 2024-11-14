@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private GameObject redTargetPrefab;
     [SerializeField] private GameObject uiCanvas;
+    [SerializeField] private GameObject movingTargetPrefab;  
+    //[SerializeField] private GameObject levelCanvas;
     [SerializeField] private TargetManager targetManager;
     [SerializeField] private GameObject bubbleCursor;
     [SerializeField] private GameObject pointCursor;
@@ -14,6 +16,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_InputField participantIDInput;
     [SerializeField] private TextMeshProUGUI levelText;
     [SerializeField] private TextMeshProUGUI streakText;  // New field for streak display
+    [SerializeField] private Button startButton;
+    [SerializeField] private GameObject targetPrefab;
+
 
     private int currentTrial = 0;
     private bool initialPhaseComplete = false;
@@ -21,20 +26,26 @@ public class GameManager : MonoBehaviour
     private int currentLevel = 0;
     private bool studyCompleted = false;
     private int streakCount = 0;  // Streak count variable
+    private Vector2[] pathPoints = new Vector2[] {
+        new Vector2(-8, 4), new Vector2(8, 4), new Vector2(8, -4), new Vector2(-8, -4)
+    };
+
 
     void Start()
     {
+        uiCanvas.SetActive(true);
         bubbleCursor.SetActive(false);
         pointCursor.SetActive(false);
         currentLevel = 0;
         levelText.gameObject.SetActive(false);
-        streakText.gameObject.SetActive(true); // Ensure streak text is active
+        streakText.gameObject.SetActive(true); 
         UpdateLevelText();
         UpdateStreakText(); // Initialize streak display
     }
 
     public void StartGame()
     {
+    
         if (participantIDInput != null && int.TryParse(participantIDInput.text, out int participantID))
         {
             studyBehavior.ParticipantID = participantID;
@@ -45,11 +56,22 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        uiCanvas.SetActive(false);
+        uiCanvas.SetActive(true);
+        //levelCanvas.SetActive(true);
         levelText.gameObject.SetActive(true);
+        streakText.gameObject.SetActive(true);  
+        participantIDInput.gameObject.SetActive(false);
+        startButton.gameObject.SetActive(false);
         useBubbleCursor = studyBehavior.StudySettings.cursorType == CursorType.BubbleCursor;
         StartInitialPhase();
     }
+
+    // New method for handling correct target selection
+    public void OnCorrectTargetSelected()
+    {
+        IncrementStreak(); // Increment the streak here
+    }
+
 
     void Update()
     {
@@ -58,13 +80,10 @@ public class GameManager : MonoBehaviour
             RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
             if (hit.collider != null && hit.collider.TryGetComponent(out Target target))
             {
+                Debug.Log($"Clicked on target: {target.gameObject.name}, IsRedTarget: {target.IsRedTarget}");
                 bool isCorrectTarget = target.OnSelect();
 
-                if (isCorrectTarget)
-                {
-                    IncrementStreak(); // Increment streak on correct selection
-                }
-                else
+                if (!isCorrectTarget)
                 {
                     ResetStreak(); // Reset streak on incorrect selection
                 }
@@ -76,6 +95,7 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+        // Reset the flag when the mouse button is released
     }
 
     void StartInitialPhase()
@@ -95,7 +115,8 @@ public class GameManager : MonoBehaviour
         if (studyBehavior.currentTrialIndex < studyBehavior.blockSequence.Count)
         {
             var trialData = studyBehavior.CurrentTrial;
-            targetManager.SetupTrial(trialData.amplitude, trialData.targetSize, trialData.EWToW_Ratio, currentLevel);
+            
+            targetManager.SetupTrial(trialData.amplitude, trialData.targetSize, trialData.EWToW_Ratio, trialData.numberOfWhiteTargets, currentLevel);
             if (useBubbleCursor)
             {
                 bubbleCursor.SetActive(true);
@@ -120,9 +141,14 @@ public class GameManager : MonoBehaviour
         {
             Destroy(target);
         }
+        GameObject[] movingTargets = GameObject.FindGameObjectsWithTag("MovingTarget");
+        foreach (GameObject movingTarget in movingTargets)
+        {
+            Destroy(movingTarget);
+        }
     }
 
-    void EndExperiment()
+    public void EndExperiment()
     {
         Debug.Log("Experiment completed. Thank you for participating.");
         bubbleCursor.SetActive(false);
@@ -161,6 +187,7 @@ public class GameManager : MonoBehaviour
     public void IncrementStreak()
     {
         streakCount++;
+        Debug.Log("IncrementStreak called from GameManager. Current streak: " + streakCount);
         UpdateStreakText();  // Update streak display
         AdjustDifficultyBasedOnStreak();  // Adjust difficulty if needed
     }

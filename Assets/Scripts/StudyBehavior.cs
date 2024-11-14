@@ -143,6 +143,8 @@ public class StudyBehavior : MonoBehaviour
 {
     Debug.Log("Study completed. Ending session.");
     // Here you can add code to display a message, load an end scene, or log final data
+    FindObjectOfType<GameManager>().EndExperiment();
+
 }
 
 

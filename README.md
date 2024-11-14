@@ -36,7 +36,7 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
 
 ### 4. TargetSpawner
 - **Hierarchy**: Right-click, select **Create Empty**, and rename it to `TargetSpawner`.
-- **Script**: Attach the `TargetSpawner` script.
+- **Script**: Attach the `TargerManager` script.
 - **Prefab References**:
   - Drag and assign the relevant target prefabs (e.g., Goal and Non-Goal targets) to the respective fields in the `TargetSpawner` component.
 
