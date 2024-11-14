@@ -85,8 +85,10 @@ public class BubbleCursor : MonoBehaviour
     private void HandleClick()
     {
         // Check if a target is within the minimum radius on click
+        
         if (closestCollider != null && Vector3.Distance(transform.position, closestCollider.transform.position) <= minRadius)
         {
+            Debug.Log($"Attempting to select target: {closestCollider.gameObject.name} with tag: {closestCollider.gameObject.tag}");
             SelectTarget(closestCollider);
         }
     }
@@ -167,28 +169,31 @@ public class BubbleCursor : MonoBehaviour
 
     private void SelectTarget(Collider2D collider)
     {
-        if (collider != null && collider.TryGetComponent(out Target target))
+    if (collider != null && collider.TryGetComponent(out Target target))
         {
             // Check if the selected target is the correct red target
             bool isCorrectTarget = target.IsRedTarget;
 
             if (isCorrectTarget)
             {
-                gameManager.IncrementStreak(); // Increment streak if correct target is selected
+                Debug.Log("IncrementStreak called from BubbleCursor.");
+                gameManager.OnCorrectTargetSelected();  // signal gamemanager
                 PlayClickSound(true); // Play correct sound for red target
                 innerRingSprite.color = correctClickColor; // Set inner circle to correct color
+
             }
             else
             {
                 gameManager.ResetStreak(); // Reset streak if incorrect target is selected
                 PlayClickSound(false); // Play bomb sound for incorrect selection
                 innerRingSprite.color = wrongClickColor; // Set inner circle to incorrect color
+
             }
 
             target.OnSelect(); // Mark the target as selected
         }
     }
-
+    
 
     
 
@@ -207,3 +212,4 @@ public class BubbleCursor : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, maxRadius);
     }
 }
+

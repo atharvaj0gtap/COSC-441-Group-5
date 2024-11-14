@@ -30,6 +30,7 @@ public class Target : MonoBehaviour
         if (isSelected || sprite == null || studyBehavior == null) return false;
 
         isSelected = true;
+            Debug.Log($"Target selected. IsRedTarget: {IsRedTarget}"); // Add this debug line
 
         if (IsRedTarget)
         {
@@ -66,6 +67,7 @@ public class Target : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         Destroy(gameObject);
+        Debug.Log("Proceeding to next trial.");
         studyBehavior.NextTrial();
     }
 

@@ -29,6 +29,15 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
 ### 3. GameManager
 - **Hierarchy**: Right-click, select **Create Empty**, and rename it to `GameManager`.
 - **Script**: Attach the `GameManager` script.
+- **Assign References in Inspector:**
+  - **Red Target Prefab:** Assign your red target prefab.
+  - **UICanvas:** Assign the Canvas GameObject.
+  - **ParticipantIDInput:** Assign the ParticipantIDInput Input Field.
+  - **StartButton:** Assign the StartButton Button.
+  - **LevelText and StreakText:** Will be assigned later after creating them.
+  - **Ending Screen Canvas:** Will be assigned later after creating them.
+  - **Bubble Cursor and Point Cursor** Will be assigned later after creating them.
+- Ensure All Fields Are Assigned to prevent NullReferenceException errors
 - **OnClick for Start Button**:
   - Select the Start button in the Canvas.
   - In the **Inspector** under **Button (Script)**, add a new **On Click ()** event.
@@ -36,9 +45,12 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
 
 ### 4. TargetSpawner
 - **Hierarchy**: Right-click, select **Create Empty**, and rename it to `TargetSpawner`.
-- **Script**: Attach the `TargetSpawner` script.
+- **Script**: Attach the `TargerManager` script.
 - **Prefab References**:
-  - Drag and assign the relevant target prefabs (e.g., Goal and Non-Goal targets) to the respective fields in the `TargetSpawner` component.
+  - **Red Target Prefab:** Assign your red target prefab.
+  - **White Target Prefab:** Assign your white target prefab.
+  - **Moving Target Prefab:** Assign your moving target prefab if used. Use MovingTarget tag for moving target prefab instead of target.
+
 
 ### 5. BubbleCursor
 - **Hierarchy**: Right-click, select **Create Empty**, and rename it to `BubbleCursor`.
@@ -80,8 +92,12 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
     - **EW To W Ratio**: Set size to 2 and values to 2 and 1.
     - **Cursor Type**: Select Bubble Cursor.
     - **Number of White Targets**: 5
-    - **Total Trials**: 5
+    - **Total Trials**: 10
     - **Current Trial Index**: 0
+- **Note:** 
+  - The StudyBehavior script manages the sequence of trials and logging of data.
+  - The includeMovingTargets parameter is configured within the StudyBehavior script to control whether trials include moving targets.
+
 
 ### 8. LevelCanvas
 - **Hierarchy**: Right-click, select **UI > Canvas**, and rename it to `LevelCanvas`.
@@ -97,6 +113,7 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
     - **Text**: Set initial text to "Level: ".
     - **Font Asset**: Assign a font (e.g., LiberationSans SDF).
     - **Font Size and Alignment**: Adjust as needed.
+- In the GameManager component, assign LevelText and StreakText to their respective fields.
 
 ### 9. Add StreakText for Streak Display
 - **Hierarchy**: Right-click `LevelCanvas` and select **UI > Text - TextMeshPro**. Rename it to `streakText`.
@@ -109,6 +126,54 @@ git clone https://github.com/atharvaj0gtap/COSC-441-Group-5.git
   - **Font Size and Alignment**: Adjust as needed.
 - **GameManager Script**: Ensure that the `streakText` field in the `GameManager` script is linked to this TextMeshPro component.
 
+### 10. Add EndingScreenCanvas
+- **Hierarchy:** Right-click, select UI > Canvas, and rename it to EndingScreenCanvas.
+- **Canvas Properties:**
+  - **Render Mode:** Screen Space - Overlay.
+  - **Order in Layer:** Set to a higher value (e.g., 1) to render above other canvases.
+
+- **Add UI Elements:**
+  - **Hierarchy:** Right-click EndingScreenCanvas, select UI > Text - TextMeshPro, rename to ThankYouText.
+  - **Text:** "Thank you for participating!".
+  - **Font Size:** Adjust as needed.
+  - **Alignment:** Centered.
+
+- **Performance Summary:**
+  - **Hierarchy:** Right-click EndingScreenCanvas, select UI > Text - TextMeshPro, rename to PerformanceSummaryText.
+TextMeshPro Settings:
+  - **Text:** Leave blank; it will be set programmatically.
+  - **Font Size:** Adjust as needed.
+  - **Alignment:**Centered.
+
+- **Exit Button**
+  - **Hierarchy:** Right-click EndingScreenCanvas, select UI > Button - TextMeshPro, rename to ExitButton.
+  - **Button Text:** "Exit".
+
+- **Restart Button:**
+  - **Hierarchy:** Right-click EndingScreenCanvas, select UI > Button - TextMeshPro, rename to RestartButton.
+  - **Button Text:**  "Restart".
+
+- **Script:** Attach the EndingScreenManager script to EndingScreenCanvas.
+
+- **Assign References in Inspector:**
+  - **ThankYouText:** Assign the ThankYouText TextMeshPro component.
+  - **PerformanceSummaryText:** Assign the PerformanceSummaryText TextMeshPro component.
+  - **ExitButton:** Assign the ExitButton Button component.
+  - **RestartButton:** Assign the RestartButton Button component.
+
+- **Button Functionality:** 
+  - Select the **ExitButton** and **RestartButton** in the Hierarchy.
+  - In the Button component's **On Click ()** section, add the corresponding methods:
+  - For ExitButton: Assign EndingScreenManager > ExitApplication.
+  - For RestartButton: Assign EndingScreenManager > RestartExperiment.
+
+The ending screen provides a summary of the player's performance at the end of the experiment.
+- **Displayed Information:**
+  - Total Trials Completed
+  - Total Time Taken
+  - Total Missed Clicks
+  - Highest Streak Achieved
+
 ## Step 3: Streak Functionality and Difficulty Increase
 
 ### Streak Functionality
@@ -116,17 +181,24 @@ The streak functionality is designed to increase the game’s difficulty by addi
 
 1. **Correct Target Selection**: Each time the player selects the correct red target, the streak value increases by 1.
 2. **Streak Reset on Incorrect Selection**: If the player selects an incorrect target (white distractor), the streak value resets to 0.
-3. **Difficulty Scaling**: When the streak reaches 3 or more, the number of white distractor targets increases by multiplying the streak value. For example, if the streak value is 4, the number of distractors is multiplied by 4.
+3. **Difficulty Scaling**: When the streak reaches 3 or more, the number of white distractor targets increases by multiplying the streak value. For example, if the streak value is 4, the number of distractors is multiplied by 4. After level 5, the distactor targets begin moving randomly.
 
 This feature aims to make the game more challenging as players perform well, adding additional white distractors based on their streak.
 
 ## Step 4: Verify and Test
 
 1. **Play Mode**: Enter Play mode in Unity to ensure all components are functioning correctly.
-2. **Test Streak Functionality**:
+2. **Test Gameplay**:
+   - Enter a participant ID and start the game.
    - Click on the red target multiple times to see the streak increase.
    - Click on a white distractor target to reset the streak.
    - Observe that the number of distractor targets increases as the streak value goes above 3.
+   - Proceed through all trials to reach the ending screen.
+   - Ensure performance data is accurately displayed.
+   - Test the Exit and Restart buttons for functionality.
 3. **Adjustments**: Make any necessary adjustments to positioning, colors, or component values.
 
 This setup should help you configure and test the project effectively, with all necessary components and features, including the new streak functionality and difficulty scaling based on streak value.
+Note: This guide assumes that all necessary scripts (GameManager, TargetManager, BubbleCursor, PointCursor, StudyBehavior, EndingScreenManager, Target, MovingTarget and CSVManager) are correctly implemented and available in the project.
+
+
