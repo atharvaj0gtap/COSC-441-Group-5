@@ -28,6 +28,8 @@ public class GameManager : MonoBehaviour
         new Vector2(-8, 4), new Vector2(8, 4), new Vector2(8, -4), new Vector2(-8, -4)
     };
 
+    public Image backgroundImage;
+    public Sprite[] levelBackgrounds;
 
     void Start()
     {
@@ -41,6 +43,7 @@ public class GameManager : MonoBehaviour
 
         UpdateLevelText();
         UpdateStreakText(); // Initialize streak display
+        UpdateBackgroundImage();
     }
 
     public void StartGame()
@@ -186,6 +189,7 @@ public class GameManager : MonoBehaviour
     {
         currentLevel = Mathf.Min(currentLevel + 1, 10);
         UpdateLevelText();
+        UpdateBackgroundImage();
     }
 
     private void UpdateLevelText()
@@ -233,5 +237,22 @@ public class GameManager : MonoBehaviour
     public int GetHighestStreak()
     {
         return highestStreak;
+    }
+
+    private void UpdateBackgroundImage()
+    {
+        if (backgroundImage != null && currentLevel < levelBackgrounds.Length)
+        {
+            backgroundImage.sprite = levelBackgrounds[currentLevel];  // Set the background image
+            Debug.Log($"Background updated to level {currentLevel}");
+        }
+        else if (backgroundImage == null)
+        {
+            Debug.LogWarning("Background Image component is not assigned!");
+        }
+        else
+        {
+            Debug.LogWarning("No background sprite defined for this level.");
+        }
     }
 }

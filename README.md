@@ -174,6 +174,19 @@ The ending screen provides a summary of the player's performance at the end of t
   - Total Missed Clicks
   - Highest Streak Achieved
 
+### 11. Add StreakText for Streak Display
+- **Hierarchy**: Right-click in the ** Hierarchy > UI > Canvas**.
+  - **Render Mode**: Set the Render Mode of the Canvas to Screen Space - Camera.
+- **Background Image**:
+  - **BG**: Inside the Canvas, add an empty GameObject and name it BG.
+  - **Image Component**: In the Inspector, click Add Component > Image.
+  - **Resize**: Click the RectTransform tool (or press T) and stretch the object to cover the entire canvas.
+- **Assign the BackgroundImage**:
+  - Drag the BackgroundImage GameObject from the Canvas into the backgroundImage field in the GameManager Inspector.
+  - **Assign Background Sprites**:
+    - Populate the levelBackgrounds array in the Inspector with your sprites for each level.
+
+
 ## Step 3: Streak Functionality and Difficulty Increase
 
 ### Streak Functionality
