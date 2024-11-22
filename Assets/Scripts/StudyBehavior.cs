@@ -210,8 +210,8 @@ public class StudySettings
 
 public enum CursorType
 {
-    PointCursor = 0,
-    BubbleCursor = 1
+    PointCursor = 1,
+    BubbleCursor = 0
 }
 
 [System.Serializable]
